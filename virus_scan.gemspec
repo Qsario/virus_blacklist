@@ -1,6 +1,6 @@
 Gem::Specification.new do |s|
   s.name = 'virus_blacklist'
-  s.version = '1.0.0'
+  s.version = '1.1.0'
   s.date = '2012-07-08'
   s.summary = 'Interface for CYMRU DNS-based virus blacklist.'
   s.description = 'A simple interface for the CYMRU DNS-based virus blacklist.'

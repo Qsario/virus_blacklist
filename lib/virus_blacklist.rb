@@ -25,8 +25,12 @@ module VirusBlacklist
     @resolver ||= Dnsruby::Resolver.new(:query_timeout => 2)  # Only waits for 2 seconds
   end
 
-  def scan(md5)
+  def valid_hash?(hash)
+    # Returns true if argument is a String containing 32 hex digits, false otherwise.
+    return !!hash.match(/\A[a-f0-9]{32}\z/i)  # Return a boolean instead of MatchData
+  end
 
+  def scan(md5)
     # Checks for a file in their blacklist.
     #
     # Example:
@@ -36,15 +40,17 @@ module VirusBlacklist
     # Arguments:
     #	md5: (String)	- String containing an MD5 hash.  Must be exactly 32 hexadecimal digits.
     #
-    # Possible Outputs:
+    # Outputs:
     #	:safe	  - Hash in registry, not detected as virus.
     #	:unsafe	  - Hash in registry, known virus
     #	:unknown  - Hash not in registry.  Most files will be unknown.
     #	:error	  - We got an unexpected IP back in reply.  Could occur due to SiteFinder and
     #		    other ISP tools that mask NXDOMAIN responses.
+    #
+    # Raises:
+    #	ArgumentError	- When the argument is not an MD5 hash.
 
-    unless md5.match(/\A[a-f0-9]{32}\z/i)
-      # MD5s are exactly 32 hex characters.
+    unless valid_hash?(md5)
       raise ArgumentError, "Invalid MD5 value (" + md5 + "). MD5s contain exactly 32 hexadecimal digits." 
     end
 
@@ -67,6 +73,40 @@ module VirusBlacklist
     end
     
   end
+
+
+  def probe(md5)
+    # Gives you a string containing a Unix timestamp when the virus was last seen
+    # followed by the overall AV detection rate, e.g. "1277221946 79" or nil, when
+    # there is no data for that hash.
+    #
+    # Example:
+    #	>> VirusBlacklist.probe("733a48a9cb49651d72fe824ca91e8d00")
+    #	=> "1277221946 79"
+    #
+    # Arguments:
+    #	md5 (String)	- MD5 hash of the file you want information on.
+    #
+    # Outputs:
+    #	nil		- No data exists for that file.
+    #	String		- A unix timestamp when the virus was last seen
+    #			- then a space and the detection % for that virus.
+    #
+    # Raises:
+    #	ArgumentError	- When passed a string that is not an MD5 hash.
+    #	ResolvTimeout	- When the nameserver does not respond in time.
+
+    unless valid_hash?(md5)
+      raise ArgumentError, "Invalid MD5 value (" + md5 + "). MD5s contain exactly 32 hexadecimal digits."
+    end
+
+    begin
+      return resolver.query(md5.downcase + ".malware.hash.cymru.com", Types.TXT).answer.entries[0].data
+    rescue NXDomain
+      return nil
+    end
+  end
+
 
   def is_ok?(md5)
 
