@@ -7,7 +7,7 @@ Usage
 -----
 
 This gem takes in the MD5 hash of a file and looks it up using CYMRU's DNS-based
-blacklist.  Its usage is incredibly simple:
+blacklist.  Its usage is simple:
 
 ```ruby
 require 'virus_blacklist' 
@@ -18,7 +18,11 @@ hash = Digest::MD5.hexdigest(File.read(file)) # Create an MD5 hash for it
 
 VirusBlacklist.resolver.query_timeout = 5   # Configure our Dnsruby::Resolver 
 VirusBlacklist.scan(hash)   # Returns :safe :unsafe :unknown or :error  
-VirusBlacklist.is_ok?(hash) # False if scan returns :unsafe, True otherwise  
+VirusBlacklist.is_ok?(hash) # False if scan returns :unsafe, true otherwise  
+VirusBlacklist.probe(hash)  # Returns a string like "1277221946 79" (or nil) 
+			    # 1277221946 is the Unix timestamp the virus was last seen
+			    # 79 means that 79% of anti-virus programs tested detected it
+			    # Nil means there's no data on that file.
 ```
 
 Dependencies
